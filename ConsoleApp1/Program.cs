@@ -40,97 +40,50 @@ namespace ConsoleApp1
             Console.WriteLine(NumMatchingSubseq("test", new string[] { "et", "ta", "tts" }));
         }
 
-
         public static int NumMatchingSubseq(string s, string[] words)
         {
-            Dictionary<node, Queue<node>> keyValuePairs =
-                new Dictionary<node, Queue<node>>();
-
-            char[] stringAsChar = s.ToCharArray();
-            int i = 0;
-            foreach (var item in stringAsChar)
+            List<IEnumerator<char>>[] waiting = new List<IEnumerator<char>>[128];
+            for (int c = 0; c <= 'z'; c++)
             {
-                i++;
-                var stringPointer = item.ToString();
-                var orderId = i;
-                var key = new node(stringPointer, orderId);
-                keyValuePairs[key] = new Queue<node>();
+                List<IEnumerator<char>> list1 = new List<IEnumerator<char>>();
+                waiting[c] = list1;
             }
 
-            foreach (var word in words)
+            foreach (string w in words)
             {
-                var item = new node(word, 0);
-                setValueInDictionary(item, ref keyValuePairs);
+                var iterator = w.GetEnumerator();
+                /*
+                   The enumerator is positioned before the first element in the collection, 
+                   immediately after the enumerator is created. MoveNext must be called to advance the enumerator 
+                   to the first element of the collection before reading the value of Current.
+                   Otherwise it will throws Exception if try get the current position using Current property.
+                */
+
+                iterator.MoveNext();
+                waiting[w[0]].Add(iterator);
             }
+            int cnt = 0;
 
-            var numberOfString = 0;
-            var keys = keyValuePairs.Keys;
-
-            while (isDictionaryEmpty(keyValuePairs))
+            foreach (char c in s.ToCharArray())
             {
-                foreach (var itm in keys)
+                List<IEnumerator<char>> advance = new List<IEnumerator<char>>(waiting[c]);
+                waiting[c].Clear();
+
+                for (int i = 0; i < advance.Count(); i++)
                 {
-                    var list = keyValuePairs[itm];
-                    //var tempListForLoop = list.Select(c => c.Clone());
-                    var key = itm;
-                    while ( list.Count>0)
+                    var it = advance[i];
+
+                    if (it.MoveNext())
                     {
-                        var item = list.Dequeue();
-                        var firstCharOfKey = key.value.ToString();
-                        var afterRemove = item.value.Remove(0,1);
-                        if (string.IsNullOrEmpty(afterRemove))
-                        {
-                            numberOfString++; 
-                        }
-                        else
-                        { 
-                            var afterRemoveTuple = new node(afterRemove, key.pointer);
-                            setValueInDictionary(afterRemoveTuple, ref keyValuePairs);
-                        }
+                        waiting[it.Current].Add(it);
+                    }
+                    else
 
-                    } 
+                        cnt++;
                 }
             }
-
-            return numberOfString;
+            return cnt;
         }
-
-        private static void setValueInDictionary(node item, ref Dictionary<node, Queue<node>> keyValuePairs)
-        {
-            var firstchar = item.value[0];
-            var readingIndex = item.pointer;
-
-            var Allkeys = keyValuePairs.Keys;
-
-            node foundedKeyToInsert = null;
-            foreach (var key in Allkeys)
-            {
-                if (key.value.ToString() == firstchar.ToString() && key.pointer > readingIndex)
-                {
-                    foundedKeyToInsert = key;
-                    break;
-                }
-            }
-            if (foundedKeyToInsert != null)
-            {
-                var itemToInsert = new node(item.value, foundedKeyToInsert.pointer);
-                var list = keyValuePairs[foundedKeyToInsert];
-                list.Enqueue(itemToInsert); 
-            }
-        }
-
-        public static bool isDictionaryEmpty(Dictionary<node,Queue<node>> dictionary)
-        {
-            foreach (var item in dictionary)
-            {
-                if (item.Value.Select(c => c != null).Any())
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
 
     }
 }
